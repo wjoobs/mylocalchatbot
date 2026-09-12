@@ -1,4 +1,4 @@
-#My Local AI chatbot
+# My Local AI chatbot
 Ollama와 Llama 3.1 8B를 이용해 만든 로컬 AI 채팅 웹앱입니다.
 
 ## Tech Stack
