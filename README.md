@@ -19,6 +19,7 @@ Ollama와 Llama 3.1 8B를 이용해 만든 로컬 AI 채팅 웹앱입니다.
 - AI 답변 복사
 
 ## Project Structure
+'''text
 my-local-chatgpt/
 ├── app/
 │   ├── main.py
