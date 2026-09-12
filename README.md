@@ -33,7 +33,8 @@ my-local-chatgpt/
 │   └── app.js
 ├── requirements.txt
 └── README.md
-```text
+```
+
 ## Status
 현재 개발 중입니다.
 앞으로 RAG, Memory, Tool Calling 등의 기능을 공부하며 추가할 예정입니다.
