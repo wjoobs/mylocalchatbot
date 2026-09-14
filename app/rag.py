@@ -13,3 +13,75 @@ def extract_text_from_pdf(file_path: str) -> str:
             text += page_text + "\n"
 
     return text
+
+import requests
+
+
+OLLAMA_EMBED_URL = "http://localhost:11434/api/embed"
+EMBED_MODEL = "nomic-embed-text"
+
+
+def create_embedding(text: str) -> list[float]:
+    response = requests.post(
+        OLLAMA_EMBED_URL,
+        json={
+            "model": EMBED_MODEL,
+            "input": text
+        }
+    )
+
+    response.raise_for_status()
+
+    data = response.json()
+
+    return data["embeddings"][0]
+
+import math
+
+
+def cosine_similarity(
+    vector_a: list[float],
+    vector_b: list[float]
+) -> float:
+
+    dot_product = sum(
+        a * b
+        for a, b in zip(vector_a, vector_b)
+    )
+
+    magnitude_a = math.sqrt(
+        sum(a * a for a in vector_a)
+    )
+
+    magnitude_b = math.sqrt(
+        sum(b * b for b in vector_b)
+    )
+
+    if magnitude_a == 0 or magnitude_b == 0:
+        return 0.0
+
+    return dot_product / (
+        magnitude_a * magnitude_b
+    )
+
+def split_text(
+    text: str,
+    chunk_size: int = 1000,
+    overlap: int = 200
+) -> list[str]:
+
+    chunks = []
+
+    start = 0
+
+    while start < len(text):
+        end = start + chunk_size
+
+        chunk = text[start:end]
+
+        if chunk.strip():
+            chunks.append(chunk)
+
+        start += chunk_size - overlap
+
+    return chunks
