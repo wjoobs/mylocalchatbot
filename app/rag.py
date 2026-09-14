@@ -1,21 +1,11 @@
 from pypdf import PdfReader
-
-
-def extract_text_from_pdf(file_path: str) -> str:
-    reader = PdfReader(file_path)
-
-    text = ""
-
-    for page in reader.pages:
-        page_text = page.extract_text()
-
-        if page_text:
-            text += page_text + "\n"
-
-    return text
-
 import requests
+import math
 
+
+# =========================
+# Ollama Embedding
+# =========================
 
 OLLAMA_EMBED_URL = "http://localhost:11434/api/embed"
 EMBED_MODEL = "nomic-embed-text"
@@ -36,8 +26,55 @@ def create_embedding(text: str) -> list[float]:
 
     return data["embeddings"][0]
 
-import math
 
+# =========================
+# PDF 텍스트 추출
+# =========================
+
+def extract_text_from_pdf(file_path: str) -> str:
+    reader = PdfReader(file_path)
+
+    text = ""
+
+    for page in reader.pages:
+        page_text = page.extract_text()
+
+        if page_text:
+            text += page_text + "\n"
+
+    return text
+
+
+# =========================
+# Chunking
+# =========================
+
+def split_text(
+    text: str,
+    chunk_size: int = 1000,
+    overlap: int = 200
+) -> list[str]:
+
+    chunks = []
+
+    start = 0
+
+    while start < len(text):
+        end = start + chunk_size
+
+        chunk = text[start:end]
+
+        if chunk.strip():
+            chunks.append(chunk)
+
+        start += chunk_size - overlap
+
+    return chunks
+
+
+# =========================
+# Cosine Similarity
+# =========================
 
 def cosine_similarity(
     vector_a: list[float],
@@ -64,24 +101,92 @@ def cosine_similarity(
         magnitude_a * magnitude_b
     )
 
-def split_text(
+
+# =========================
+# 문서 검색
+# =========================
+
+def search_chunks(
     text: str,
-    chunk_size: int = 1000,
-    overlap: int = 200
-) -> list[str]:
+    question: str,
+    top_k: int = 3
+):
+    chunks = split_text(text)
 
-    chunks = []
+    print(f"전체 Chunk 개수: {len(chunks)}")
 
-    start = 0
+    # Chunk Embedding
+    chunk_embeddings = []
 
-    while start < len(text):
-        end = start + chunk_size
+    for chunk in chunks:
+        embedding = create_embedding(chunk)
 
-        chunk = text[start:end]
+        chunk_embeddings.append(embedding)
 
-        if chunk.strip():
-            chunks.append(chunk)
+    # 질문 Embedding
+    question_embedding = create_embedding(question)
 
-        start += chunk_size - overlap
+    results = []
 
-    return chunks
+    for i, embedding in enumerate(
+        chunk_embeddings
+    ):
+        similarity = cosine_similarity(
+            question_embedding,
+            embedding
+        )
+
+        results.append({
+            "chunk": chunks[i],
+            "similarity": similarity
+        })
+
+    # 유사도 높은 순서
+    results.sort(
+        key=lambda x: x["similarity"],
+        reverse=True
+    )
+
+    return results[:top_k]
+
+
+# =========================
+# 테스트
+# =========================
+
+if __name__ == "__main__":
+
+    pdf_path = "uploads/test.pdf"
+
+    question = input(
+        "질문을 입력하세요: "
+    )
+
+    text = extract_text_from_pdf(
+        pdf_path
+    )
+
+    results = search_chunks(
+        text,
+        question,
+        top_k=3
+    )
+
+    print("\n=== 검색 결과 ===")
+
+    for i, result in enumerate(
+        results,
+        start=1
+    ):
+        print(
+            f"\n--- Result {i} ---"
+        )
+
+        print(
+            f"유사도: "
+            f"{result['similarity']:.4f}"
+        )
+
+        print(
+            result["chunk"]
+        )
