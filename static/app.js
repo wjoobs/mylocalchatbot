@@ -19,6 +19,17 @@ const chat =
 const sendButton =
     document.getElementById("sendButton");
 
+const fileButton =
+    document.getElementById("fileButton");
+
+const fileInput =
+    document.getElementById("fileInput");
+
+const filePreview =
+    document.getElementById("filePreview");
+
+let selectedFile = null;
+
 const renameModal =
     document.getElementById("renameModal");
 
@@ -200,85 +211,154 @@ function addMessage(role, content) {
 // =========================
 
 async function sendMessage() {
-
     const message =
         messageInput.value.trim();
 
-
-    if (!message) {
+    if (!message && !selectedFile) {
         return;
     }
 
-
     if (currentChatId === null) {
-
         const response =
             await fetch("/chats", {
                 method: "POST"
             });
 
-
         const newChatData =
             await response.json();
-
 
         currentChatId =
             newChatData.id;
 
-
         await loadChats();
     }
 
+    // =========================
+    // PDF 업로드
+    // =========================
+
+    let pdfText = "";
+
+    if (selectedFile) {
+        const formData =
+            new FormData();
+
+        formData.append(
+            "file",
+            selectedFile
+        );
+
+        try {
+            const uploadResponse =
+                await fetch(
+                    "/upload-pdf",
+                    {
+                        method: "POST",
+                        body: formData
+                    }
+                );
+
+            if (!uploadResponse.ok) {
+                throw new Error(
+                    "PDF 업로드 실패"
+                );
+            }
+
+            const uploadData =
+                await uploadResponse.json();
+
+            if (uploadData.error) {
+                throw new Error(
+                    uploadData.error
+                );
+            }
+
+            pdfText =
+                uploadData.text;
+
+        } catch (error) {
+            addMessage(
+                "assistant",
+                `PDF 업로드 중 오류가 발생했습니다.\n\n${error.message}`
+            );
+
+            return;
+        }
+    }
+
+    // =========================
+    // 사용자 메시지
+    // =========================
+
+    let displayMessage =
+        message;
+
+    if (selectedFile) {
+        displayMessage =
+            `📄 ${selectedFile.name}\n\n${message}`;
+    }
 
     addMessage(
         "user",
-        message
+        displayMessage
     );
 
-
     messageInput.value = "";
-
     autoResize();
 
+    // 파일 선택 초기화
+    removeSelectedFile();
 
     sendButton.disabled = true;
     sendButton.textContent = "⋯";
 
-
     try {
+        // =========================
+        // PDF 내용이 있다면 메시지에 포함
+        // =========================
+
+        let finalMessage =
+            message;
+
+        if (pdfText) {
+            finalMessage =
+                `다음은 사용자가 첨부한 PDF의 내용입니다.
+
+--- PDF 내용 시작 ---
+${pdfText}
+--- PDF 내용 끝 ---
+
+사용자의 질문:
+${message}`;
+        }
 
         const response =
             await fetch(
                 `/chats/${currentChatId}/message`,
                 {
                     method: "POST",
-
                     headers: {
                         "Content-Type":
                             "application/json"
                     },
-
                     body: JSON.stringify({
-                        message: message
+                        message:
+                            finalMessage
                     })
                 }
             );
 
-
         if (!response.ok) {
-
             throw new Error(
                 "서버 오류"
             );
         }
-
 
         const assistantMessage =
             addMessage(
                 "assistant",
                 ""
             );
-
 
         const reader =
             response.body.getReader();
@@ -288,19 +368,15 @@ async function sendMessage() {
 
         let answer = "";
 
-
         while (true) {
-
             const {
                 value,
                 done
             } = await reader.read();
 
-
             if (done) {
                 break;
             }
-
 
             const chunk =
                 decoder.decode(value);
@@ -313,22 +389,17 @@ async function sendMessage() {
             scrollToBottom();
         }
 
-
         await loadChats();
 
     } catch (error) {
-
         addMessage(
             "assistant",
             "오류가 발생했습니다.\n" +
             error.message
         );
-
     } finally {
-
         sendButton.disabled = false;
         sendButton.textContent = "➤";
-
         messageInput.focus();
     }
 }
@@ -796,3 +867,144 @@ document.addEventListener(
 // =========================
 
 loadChats();
+
+// =========================
+// PDF 파일 선택
+// =========================
+
+fileButton.addEventListener(
+    "click",
+    function() {
+
+        fileInput.click();
+
+    }
+);
+
+
+fileInput.addEventListener(
+    "change",
+    function() {
+
+        const file =
+            fileInput.files[0];
+
+        if (!file) {
+            return;
+        }
+
+
+        if (
+            file.type !== "application/pdf" &&
+            !file.name.toLowerCase().endsWith(".pdf")
+        ) {
+
+            alert("PDF 파일만 첨부할 수 있습니다.");
+
+            fileInput.value = "";
+
+            return;
+        }
+
+
+        selectedFile =
+            file;
+
+
+        showSelectedFile();
+    }
+);
+
+
+// =========================
+// 선택된 PDF 표시
+// =========================
+
+function showSelectedFile() {
+
+    if (!selectedFile) {
+
+        filePreview.innerHTML = "";
+
+        filePreview.classList.add(
+            "hidden"
+        );
+
+        return;
+    }
+
+
+    filePreview.innerHTML = `
+
+        <div class="file-preview-item">
+
+            <span class="file-preview-icon">
+                📄
+            </span>
+
+            <span class="file-preview-name">
+                ${selectedFile.name}
+            </span>
+
+            <button
+                class="file-remove-button"
+                type="button"
+                title="첨부 취소"
+            >
+                ×
+            </button>
+
+        </div>
+
+    `;
+
+
+    filePreview.classList.remove(
+        "hidden"
+    );
+
+
+    const removeButton =
+        filePreview.querySelector(
+            ".file-remove-button"
+        );
+
+
+    removeButton.onclick =
+        removeSelectedFile;
+}
+
+
+// =========================
+// PDF 선택 취소
+// =========================
+
+function removeSelectedFile() {
+
+    selectedFile =
+        null;
+
+    fileInput.value =
+        "";
+
+    showSelectedFile();
+}
+
+// =========================
+// PDF 파일 선택 테스트
+// =========================
+
+fileButton.addEventListener(
+    "click",
+    function() {
+        console.log("PDF 버튼 클릭됨");
+        fileInput.click();
+    }
+);
+
+fileInput.addEventListener(
+    "change",
+    function() {
+        console.log("선택된 파일:", fileInput.files[0]);
+    }
+);

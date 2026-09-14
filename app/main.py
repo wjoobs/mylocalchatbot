@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
+import os
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -13,6 +14,9 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+UPLOAD_DIR = "uploads"
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app.mount(
     "/static",
@@ -344,3 +348,34 @@ def send_message(
         generate(),
         media_type="text/plain"
     )
+
+# =========================
+# PDF 업로드
+# =========================
+
+@app.post("/upload-pdf")
+async def upload_pdf(file: UploadFile = File(...)):
+
+    if not file.filename.lower().endswith(".pdf"):
+        return {
+            "error": "PDF 파일만 업로드할 수 있습니다."
+        }
+
+    file_path = os.path.join(
+        UPLOAD_DIR,
+        file.filename
+    )
+
+    with open(file_path, "wb") as buffer:
+        content = await file.read()
+        buffer.write(content)
+
+    from app.rag import extract_text_from_pdf
+
+    text = extract_text_from_pdf(file_path)
+
+    return {
+        "filename": file.filename,
+        "text_length": len(text),
+        "text": text
+    }

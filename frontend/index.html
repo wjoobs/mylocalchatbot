@@ -79,30 +79,52 @@
 
 
             <!-- Input -->
-            <div class="input-area">
+      <div class="input-area">
 
-                <div class="input-wrapper">
+    <div
+        id="filePreview"
+        class="file-preview hidden"
+    >
+    </div>
 
-                    <textarea
-                        id="message"
-                        placeholder="메시지를 입력하세요..."
-                        rows="1"
-                    ></textarea>
+    <div class="input-wrapper">
 
-                    <button
-                        id="sendButton"
-                        onclick="sendMessage()"
-                    >
-                        ➤
-                    </button>
+        <button
+            id="fileButton"
+            class="file-button"
+            type="button"
+            title="PDF 첨부"
+        >
+            📎
+        </button>
 
-                </div>
+        <input
+            id="fileInput"
+            type="file"
+            accept=".pdf,application/pdf"
+            hidden
+        >
 
-                <div class="input-info">
-                    Enter로 전송 · Shift + Enter로 줄바꿈
-                </div>
+        <textarea
+            id="message"
+            placeholder="메시지를 입력하세요..."
+            rows="1"
+        ></textarea>
 
-            </div>
+        <button
+            id="sendButton"
+            onclick="sendMessage()"
+        >
+            ➤
+        </button>
+
+    </div>
+
+    <div class="input-info">
+        Enter로 전송 · Shift + Enter로 줄바꿈
+    </div>
+
+</div>
 
         </main>
 
