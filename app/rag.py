@@ -103,7 +103,7 @@ def cosine_similarity(
 
 
 # =========================
-# 문서 검색
+# 관련 Chunk 검색
 # =========================
 
 def search_chunks(
@@ -113,18 +113,18 @@ def search_chunks(
 ):
     chunks = split_text(text)
 
-    print(f"전체 Chunk 개수: {len(chunks)}")
+    if not chunks:
+        return []
 
-    # Chunk Embedding
     chunk_embeddings = []
 
     for chunk in chunks:
         embedding = create_embedding(chunk)
-
         chunk_embeddings.append(embedding)
 
-    # 질문 Embedding
-    question_embedding = create_embedding(question)
+    question_embedding = create_embedding(
+        question
+    )
 
     results = []
 
@@ -141,52 +141,9 @@ def search_chunks(
             "similarity": similarity
         })
 
-    # 유사도 높은 순서
     results.sort(
         key=lambda x: x["similarity"],
         reverse=True
     )
 
     return results[:top_k]
-
-
-# =========================
-# 테스트
-# =========================
-
-if __name__ == "__main__":
-
-    pdf_path = "uploads/test.pdf"
-
-    question = input(
-        "질문을 입력하세요: "
-    )
-
-    text = extract_text_from_pdf(
-        pdf_path
-    )
-
-    results = search_chunks(
-        text,
-        question,
-        top_k=3
-    )
-
-    print("\n=== 검색 결과 ===")
-
-    for i, result in enumerate(
-        results,
-        start=1
-    ):
-        print(
-            f"\n--- Result {i} ---"
-        )
-
-        print(
-            f"유사도: "
-            f"{result['similarity']:.4f}"
-        )
-
-        print(
-            result["chunk"]
-        )

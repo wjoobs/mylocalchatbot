@@ -237,8 +237,6 @@ async function sendMessage() {
     // PDF 업로드
     // =========================
 
-    let pdfText = "";
-
     if (selectedFile) {
         const formData =
             new FormData();
@@ -246,6 +244,11 @@ async function sendMessage() {
         formData.append(
             "file",
             selectedFile
+        );
+
+        formData.append(
+            "chat_id",
+            currentChatId
         );
 
         try {
@@ -259,8 +262,16 @@ async function sendMessage() {
                 );
 
             if (!uploadResponse.ok) {
+                const errorText =
+                    await uploadResponse.text();
+
+                console.error(
+                    "PDF 업로드 서버 오류:",
+                    errorText
+                );
+
                 throw new Error(
-                    "PDF 업로드 실패"
+                    `PDF 업로드 실패 (${uploadResponse.status})`
                 );
             }
 
@@ -272,9 +283,6 @@ async function sendMessage() {
                     uploadData.error
                 );
             }
-
-            pdfText =
-                uploadData.text;
 
         } catch (error) {
             addMessage(
@@ -313,24 +321,8 @@ async function sendMessage() {
     sendButton.textContent = "⋯";
 
     try {
-        // =========================
-        // PDF 내용이 있다면 메시지에 포함
-        // =========================
-
         let finalMessage =
-            message;
-
-        if (pdfText) {
-            finalMessage =
-                `다음은 사용자가 첨부한 PDF의 내용입니다.
-
---- PDF 내용 시작 ---
-${pdfText}
---- PDF 내용 끝 ---
-
-사용자의 질문:
-${message}`;
-        }
+            message || "첨부한 PDF 내용을 요약해줘.";
 
         const response =
             await fetch(
@@ -989,22 +981,3 @@ function removeSelectedFile() {
 
     showSelectedFile();
 }
-
-// =========================
-// PDF 파일 선택 테스트
-// =========================
-
-fileButton.addEventListener(
-    "click",
-    function() {
-        console.log("PDF 버튼 클릭됨");
-        fileInput.click();
-    }
-);
-
-fileInput.addEventListener(
-    "change",
-    function() {
-        console.log("선택된 파일:", fileInput.files[0]);
-    }
-);

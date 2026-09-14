@@ -5,12 +5,18 @@ from app.database import Base
 
 
 class Chat(Base):
-
     __tablename__ = "chats"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
-    title = Column(String(200), default="새 채팅")
+    title = Column(
+        String(200),
+        default="새 채팅"
+    )
 
     created_at = Column(
         DateTime,
@@ -25,18 +31,78 @@ class Chat(Base):
 
 
 class Message(Base):
-
     __tablename__ = "messages"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
-    chat_id = Column(Integer, index=True)
+    chat_id = Column(
+        Integer,
+        index=True
+    )
 
-    role = Column(String(20))
+    role = Column(
+        String(20)
+    )
 
-    content = Column(Text)
+    content = Column(
+        Text
+    )
 
     created_at = Column(
         DateTime,
         default=datetime.utcnow
+    )
+
+
+class Document(Base):
+    __tablename__ = "documents"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    chat_id = Column(
+        Integer,
+        index=True
+    )
+
+    filename = Column(
+        String(255)
+    )
+
+    text = Column(
+        Text
+    )
+
+
+class DocumentChunk(Base):
+    __tablename__ = "document_chunks"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    document_id = Column(
+        Integer,
+        index=True
+    )
+
+    chunk_index = Column(
+        Integer
+    )
+
+    content = Column(
+        Text
+    )
+
+    embedding = Column(
+        Text
     )
