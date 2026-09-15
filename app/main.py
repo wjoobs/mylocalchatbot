@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import os
 import json
+from pathlib import Path
 
 from app.database import engine, SessionLocal, Base
 from app.models import (
@@ -19,6 +20,14 @@ from app.rag import (
     create_embedding,
     cosine_similarity
 )
+
+
+RESOURCE_DIR = Path(
+    os.environ.get(
+        "MY_LOCAL_CHATGPT_RESOURCE_DIR",
+        "."
+    )
+).resolve()
 
 
 # =========================
@@ -37,7 +46,7 @@ app = FastAPI()
 
 app.mount(
     "/static",
-    StaticFiles(directory="static"),
+    StaticFiles(directory=str(RESOURCE_DIR / "static")),
     name="static"
 )
 
@@ -73,7 +82,7 @@ class ChatTitleRequest(BaseModel):
 @app.get("/")
 def home():
     return FileResponse(
-        "frontend/index.html"
+        str(RESOURCE_DIR / "frontend" / "index.html")
     )
 
 

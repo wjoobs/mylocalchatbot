@@ -5,3 +5,7 @@ chat.db
 .env
 .vscode/
 uploads/
+build/
+dist/
+*.spec
+*.zip
